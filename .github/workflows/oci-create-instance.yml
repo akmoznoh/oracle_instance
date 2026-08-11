@@ -1,0 +1,79 @@
+name: Create Ampere A1 Instance
+
+on:
+  workflow_dispatch:
+    inputs:
+      ocpus:
+        description: "Počet OCPU"
+        required: false
+        default: "2"
+      ram:
+        description: "RAM v GB"
+        required: false
+        default: "12"
+      instance_name:
+        description: "Název instance"
+        required: false
+        default: "Ampere-A1-Instance"
+      max_attempts:
+        description: "Max. pokusů (0 = bez limitu)"
+        required: false
+        default: "0"
+      retry_wait:
+        description: "Čekání mezi pokusy v sekundách"
+        required: false
+        default: "300"
+
+jobs:
+  create-instance:
+    name: Create OCI Instance
+    runs-on: ubuntu-latest
+    timeout-minutes: 360 # GitHub runner má max. limit 6 hodin (360 minut) na job
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install OCI CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh \
+            | bash -s -- --accept-all-defaults
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+          echo "$HOME/lib/oracle-cli/bin" >> "$GITHUB_PATH"
+
+      - name: Verify OCI CLI
+        run: oci --version
+
+      - name: Create OCI Instance
+        env:
+          # --- OCI autentizace (uložte jako GitHub Secrets) ---
+          OCI_CLI_USER: ${{ secrets.OCI_CLI_USER }}
+          OCI_CLI_FINGERPRINT: ${{ secrets.OCI_CLI_FINGERPRINT }}
+          OCI_CLI_TENANCY: ${{ secrets.OCI_CLI_TENANCY }}
+          OCI_CLI_REGION: ${{ secrets.OCI_CLI_REGION }}
+          OCI_CLI_KEY_CONTENT: ${{ secrets.OCI_CLI_KEY_CONTENT }}
+
+          # --- SSH klíč pro instanci ---
+          OCI_SSH_PUBLIC_KEY: ${{ secrets.OCI_SSH_PUBLIC_KEY }}
+
+          # --- OCI Resource IDs ---
+          OCI_COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_ID }}
+          OCI_SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
+          OCI_REGION: ${{ secrets.OCI_CLI_REGION }}
+
+          # --- Parametry spuštění ---
+          OCI_OCPUS: ${{ inputs.ocpus }}
+          OCI_RAM: ${{ inputs.ram }}
+          OCI_INSTANCE_NAME: ${{ inputs.instance_name }}
+          OCI_MAX_ATTEMPTS: ${{ inputs.max_attempts }}
+          OCI_RETRY_WAIT: ${{ inputs.retry_wait }}
+        run: |
+          bash create-instance.sh
+
+      - name: Upload SSH private key as artifact (only on local runs)
+        if: ${{ always() && env.OCI_SSH_PUBLIC_KEY == '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: oci-ssh-key
+          path: ~/.ssh/id_rsa_oci
+          retention-days: 1
