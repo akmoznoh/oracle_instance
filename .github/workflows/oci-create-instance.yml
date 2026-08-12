@@ -63,12 +63,12 @@ jobs:
           OCI_SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
           OCI_REGION: ${{ secrets.OCI_CLI_REGION }}
 
-          # --- Parametry spuštění ---
-          OCI_OCPUS: ${{ inputs.ocpus }}
-          OCI_RAM: ${{ inputs.ram }}
-          OCI_INSTANCE_NAME: ${{ inputs.instance_name }}
-          OCI_MAX_ATTEMPTS: ${{ inputs.max_attempts }}
-          OCI_RETRY_WAIT: ${{ inputs.retry_wait }}
+          # --- Parametry spuštění s fallbackem pro Cron ---
+          OCI_OCPUS: ${{ inputs.ocpus || '2' }}
+          OCI_RAM: ${{ inputs.ram || '12' }}
+          OCI_INSTANCE_NAME: ${{ inputs.instance_name || 'Ampere-A1-Instance' }}
+          OCI_MAX_ATTEMPTS: ${{ inputs.max_attempts || '0' }}
+          OCI_RETRY_WAIT: ${{ inputs.retry_wait || '300' }}
         run: |
           bash create-instance.sh
 
