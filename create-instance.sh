@@ -53,13 +53,13 @@ setup_ssh_key() {
 
 get_image_id() {
     local region="$1"
-    log "[$region] Hledám nejnovější Oracle Linux 8 image pro $SHAPE..."
+    log "[$region] Hledám nejnovější Oracle Linux 9 image pro $SHAPE..."
     local image_id
     image_id=$(oci compute image list \
         --region "$region" \
         --compartment-id "$COMPARTMENT_ID" \
         --operating-system "Oracle Linux" \
-        --operating-system-version "8" \
+        --operating-system-version "9" \
         --shape "$SHAPE" \
         --sort-by TIMECREATED \
         --sort-order DESC \
